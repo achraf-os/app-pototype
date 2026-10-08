@@ -7,7 +7,7 @@ const $ = s => document.querySelector(s);
 const TABS = [['timeclock', 'Clock', 'clock'], ['timesheet', 'Timesheet', 'calendar'], ['vehicles', 'Vehicles', 'car'], ['assets', 'Assets', 'box'], ['more', 'More', 'dots']];
 const tabOf = r => (r === 'timeclock' || r === 'requests') ? 'timeclock' : (r === 'timesheet' || r === 'shifts' || r === 'entry') ? 'timesheet' : r.startsWith('vehicle') ? 'vehicles' : r.startsWith('asset') ? 'assets' : 'more';
 const FORMS = ['vehicleForm', 'assetForm', 'assetCheckout', 'change', 'journeyForm', 'incident', 'jsaForm'];
-const NO_TABS = ['login', 'otp', 'unlock', 'oscar', ...FORMS];
+const NO_TABS = ['login', 'otp', 'unlock', 'oscar', 'entry', ...FORMS];
 const NO_FAB = [...NO_TABS, 'vehicle', 'asset', 'profile'];
 
 const PANEL = [

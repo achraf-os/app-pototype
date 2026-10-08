@@ -103,7 +103,7 @@ const tsSeg = on => `<div class="pad mt8"><div class="seg">${[['shifts', 'Shifts
 V.timesheet = () => {
   const P = { approved: ['ok', 'Approved', 'check'], pending: ['warn', 'Pending', 'clock'], progress: ['info', 'In progress', 'clock'], none: ['neutral', 'No shift', ''] };
   const sum = st => WEEK.filter(d => d.st === st).reduce((a, d) => a + d.hrs, 0), ok = sum('approved'), pend = sum('pending');
-  return `${hdrMain()}${tsSeg('timesheet')}
+  return `${hdrMain()}${tsSeg('timesheet')}${tsHead()}
 ${guard({ error: "Couldn't load timesheets — tap to retry", icon: 'doc', empty: 'No time recorded for this range', emptySub: 'Clock in to start tracking your time' }, () => `
 <div class="stack">
 <div class="card p row between"><button class="icon-btn sq" data-toast="Previous pay period" aria-label="Previous">${ic('chevL', 22)}</button><div class="center"><b class="t-h2">5 Oct – 11 Oct</b><p class="t-sub">Pay period · this week</p></div><button class="icon-btn sq" data-toast="Next pay period" aria-label="Next">${ic('chevR', 22)}</button></div>

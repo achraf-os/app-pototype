@@ -129,7 +129,7 @@ ${rows.length ? `<div class="row between"><div class="seg" style="width:210px;he
 }
 // Admins and owners get the team timesheet; "Mine" switches them to their own, as a worker sees it.
 const workerTimesheet = V.timesheet;
-V.timesheet = () => reviewer() && !tr().mine ? teamTimesheet() : reviewer() ? workerTimesheet().replace('<div class="stack">', `<div class="pad row between" style="margin-top:12px"><h1 class="t-title" style="font-size:24px">Timesheet</h1><div class="seg" style="width:124px;height:32px"><button style="line-height:26px;font-size:13px" data-act="tsMine" data-v="">Team</button><button style="line-height:26px;font-size:13px" class="on">Mine</button></div></div><div class="stack">`) : workerTimesheet();
+V.timesheet = () => reviewer() && !tr().mine ? teamTimesheet() : workerTimesheet();
 
 /* ---------- sheets ---------- */
 const periodSheet = () => { const t = tr(); return `<div class="sheet-head"><b>Payroll period</b><button data-act="closeSheet">Close</button></div>

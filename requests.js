@@ -92,29 +92,71 @@ function tsRows() {
     if (d[2] > TODAY_ISO) return `<div class="day">${left}<div class="grow"><b>– hrs</b><small>Upcoming shift</small></div>${pill('neutral', 'Upcoming')}</div>`;
     const asked = REQUESTS.find(r => r.mine && r.type === 'add_shift' && r.iso === d[2] && r.st === 'pending');
     return asked ? `<button class="day" data-go="requests">${left}<div class="grow"><b>${T(asked.req.inM)} – ${T(asked.req.outM)}</b><small>Missing shift requested</small></div>${pill('warn', 'Pending')}</button>`
-      : `<button class="day miss" data-act="change" data-v="add_shift::${d[2]}">${left}<div class="grow"><b>No time recorded</b><small>Worked this day? Add the missing shift</small></div><span class="pill info">${ic('plus', 14, 2.6)}Add shift</span></button>`;
+      : `<button class="day miss" data-act="change" data-v="add_shift::${d[2]}">${left}<div class="grow"><b>No time recorded</b><small>Tap if you worked this day</small></div>${cv()}</button>`;
   }).join('');
 }
+// Header action on the Timesheet tab: a worker reports a missing shift; a reviewer switches Team / Mine.
+const tsHead = () => `<div class="pad row between" style="margin-top:12px"><h1 class="t-title" style="font-size:24px">Timesheet</h1>${reviewer()
+  ? `<div class="seg" style="width:124px;height:32px"><button style="line-height:26px;font-size:13px" data-act="tsMine" data-v="">Team</button><button style="line-height:26px;font-size:13px" class="on">Mine</button></div>`
+  : `<button class="btn soft sm" style="width:auto;height:36px;padding:0 14px;font-size:13px" data-act="change" data-v="add_shift::${TODAY_ISO}">${ic('plus', 16, 2.6)}Missing shift</button>`}</div>`;
 const todayRows = () => ENTRIES.filter(e => e.iso === TODAY_ISO && !e.removed).map(e => entryRow(e, '')).join('');
 
-/* ---------- entry detail ---------- */
+/* ---------- the shift page: one tap from the timesheet, and the correction happens right here ----------
+   The recorded shift is shown as tiles. Clock in, clock out and job are editable in place; the
+   moment one differs from the record, the "what changes" summary, the reason and the submit bar
+   appear. Nothing to open first, no second screen. Removal is a quiet link at the bottom. */
+const chDirty = () => { const c = S.ch, o = chOld(); return !!o && c.type === 'correction' && (c.job !== o.job || toM(c.in) !== o.inM || toM(c.out) !== o.outM); };
+const canFix = e => !reviewer() && !e.locked && e.outM != null;
+function entryInit(e) {
+  const p = pendingFor(e.id);
+  if (p) { const a = after(p); S.ch = { type: p.type, entryId: e.id, reqId: p.id, old: null, lock: true, iso: e.iso, job: a.job, in: HM(a.inM), out: HM(a.outM), reason: p.reason }; }
+  else chNew('correction', e.id);
+}
 V.entry = () => {
-  const e = ENTRIES.find(x => x.id === S.entry), p = pendingFor(e.id), live = e.outM == null, mins = span(e.inM, e.outM), ot = Math.max(0, mins - 480);
-  const tile = (icon, color, label, value) => `<div class="tt"><small><span style="color:${color}">${ic(icon, 14, 2.4)}</span>${label}</small><b>${value}</b></div>`;
-  const cta = reviewer() ? '' : e.locked ? `<div class="note">${ic('lock', 16)}This entry is locked and can't be changed.</div>`
-    : live ? `<div class="note">${ic('clock', 16)}Clock out first — a shift in progress can't be corrected.</div>`
-    : p ? `<div class="note warn">${ic('clock', 16)}<span class="grow">A change to this shift is waiting for review.</span></div>
-<button class="btn" data-act="editReq" data-v="${p.id}">${ic('edit', 20)}Edit request</button><button class="btn line sm" data-act="cancelReq" data-v="${p.id}">Cancel request</button>`
-    : `<button class="btn" data-act="change" data-v="correction:${e.id}">${ic('edit', 20)}Request correction</button>
-<button class="btn line sm" style="color:var(--bad)" data-act="change" data-v="remove_shift:${e.id}">${ic('x', 18, 2.4)}Request to remove this shift</button>`;
-  return `${hdrBack('Entry detail')}<div class="stack">
-<div class="card p"><div class="row gap12"><span class="chip blue">${ic('pin', 22)}</span><div class="grow"><b class="t-card trunc" style="display:block">${e.job}</b><span class="t-sub">${fmtDate(e.iso)}</span></div>${entryPill(e)}</div>
-<div class="tts mt12">${tile('logout', 'var(--ok-solid)', 'Clock in', T(e.inM))}${tile('logout', 'var(--bad-solid)', 'Clock out', live ? 'In progress' : T(e.outM))}${tile('clock', 'var(--primary)', 'Regular', live ? '—' : DUR(mins - ot))}${tile('clock', 'var(--warn-solid)', 'Overtime', live ? '—' : DUR(ot))}</div>
-${reviewer() && !live ? `<div class="kv mt8" style="border-top:1px solid var(--divider)">Labor cost<b>$${(mins / 60 * RATE['Alex Morgan']).toFixed(2)}</b></div>` : ''}</div>
-${e.adj ? `<div class="card p"><div class="row between"><b class="t-card">${e.adj === 'add_shift' ? 'Added shift' : 'Corrected'}</b><span class="t-sub">Approved by ${e.by}</span></div>
-${(e.hist || []).map(h => `<div class="kv">${h[0]}<b><s>${h[1]}</s> → ${h[2]}</b></div>`).join('')}</div>` : ''}
-${cta}</div>`;
+  const e = ENTRIES.find(x => x.id === S.entry), live = e.outM == null, edit = canFix(e);
+  if (!S.ch || S.ch.entryId !== e.id) entryInit(e);
+  const c = S.ch, rm = edit && c.type === 'remove_shift', open = edit && (rm || chDirty() || c.reqId);
+  const inM = edit && !rm ? toM(c.in) : e.inM, outM = edit && !rm ? toM(c.out) : e.outM, mins = span(inM, outM), ot = Math.max(0, mins - 480);
+  const head = (icon, color, label) => '<small><span style="color:' + color + '">' + ic(icon, 14, 2.4) + '</span>' + label + (edit && !rm ? '<span class="pen">' + ic('edit', 13, 2.2) + '</span>' : '') + '</small>';
+  const was = (key, text) => '<em class="wasl">Was ' + text + ' · <button data-act="chReset" data-v="' + key + '">Reset</button></em>';
+  const timeTile = (key, icon, color, label, rec) => edit && !rm
+    ? '<div class="tt ed ' + (toM(c[key]) !== rec ? 'on' : '') + '" id="t-' + key + '">' + head(icon, color, label) + '<input type="time" data-ch="' + key + '" value="' + c[key] + '" aria-label="' + label + '">' + was(key, T(rec)) + '</div>'
+    : '<div class="tt">' + head(icon, color, label) + '<b>' + (rec == null ? 'In progress' : T(rec)) + '</b></div>';
+  const jobTile = edit && !rm
+    ? '<div class="tt ed wide ' + (c.job !== e.job ? 'on' : '') + '" id="t-job" data-act="chJobs" role="button">' + head('pin', 'var(--primary)', 'Job') + '<b class="row between">' + c.job + '<span class="c-3">' + ic('chevD', 18, 2.2) + '</span></b>' + was('job', e.job) + '</div>'
+    : '<div class="tt wide">' + head('pin', 'var(--primary)', 'Job') + '<b>' + e.job + '</b></div>';
+  const note = reviewer() ? '' : e.locked ? '<div class="note">' + ic('lock', 16) + "This entry is locked and can't be changed.</div>"
+    : live ? '<div class="note">' + ic('clock', 16) + "Clock out first — a shift in progress can't be corrected.</div>" : '';
+  return hdrBack('Entry detail') + '<div class="stack">' +
+'<div class="card p ' + (rm ? 'rm' : '') + '"><div class="row gap12"><span class="chip blue">' + ic('clock', 22) + '</span><div class="grow"><b class="t-card" style="display:block">' + fmtDate(e.iso) + '</b><span class="t-sub">' + (live ? 'Shift in progress' : DUR(span(e.inM, e.outM)) + ' recorded') + '</span></div>' + entryPill(e) + '</div>' +
+'<div class="tts mt12">' + timeTile('in', 'logout', 'var(--ok-solid)', 'Clock in', e.inM) + timeTile('out', 'logout', 'var(--bad-solid)', 'Clock out', e.outM) + jobTile +
+'<div class="tt">' + head2('clock', 'var(--primary)', 'Regular') + '<b id="v-reg">' + (live ? '—' : DUR(mins - ot)) + '</b></div><div class="tt">' + head2('clock', 'var(--warn-solid)', 'Overtime') + '<b id="v-ot">' + (live ? '—' : DUR(ot)) + '</b></div></div>' +
+(reviewer() && !live ? '<div class="kv mt8" style="border-top:1px solid var(--divider)">Labor cost<b>$' + (mins / 60 * RATE['Alex Morgan']).toFixed(2) + '</b></div>' : '') + '</div>' +
+(edit ? '<p class="t-sub row gap6" id="hint" style="justify-content:center;' + (open ? 'display:none' : '') + '">' + ic('edit', 14, 2.2) + 'Something wrong? Tap a time or the job to correct it.</p>' : note) +
+(edit ? '<div id="fix" class="fix" style="' + (open ? '' : 'display:none') + '">' +
+  (c.reqId ? '<div class="note warn">' + ic('clock', 16) + '<span>Waiting for review. You can change it and resubmit, or cancel it.</span></div>' : '') +
+  '<div id="chg-summary">' + chSummary() + '</div>' +
+  '<div class="field"><span>Reason <em>*</em></span><div class="opts quick">' + QUICK.map(q => '<button data-act="chQuick">' + q + '</button>').join('') + '</div>' +
+  '<div class="in area mt8"><textarea data-ch="reason" placeholder="' + (rm ? 'Explain why this shift should be removed' : 'Explain what should be corrected') + '">' + c.reason + '</textarea></div><small id="chg-count">' + c.reason.trim().length + ' / 20 characters minimum</small></div></div>' : '') +
+(e.adj ? '<div class="card p"><div class="row between"><b class="t-card">' + (e.adj === 'add_shift' ? 'Added shift' : 'Corrected') + '</b><span class="t-sub">Approved by ' + e.by + '</span></div>' + (e.hist || []).map(h => '<div class="kv">' + h[0] + '<b><s>' + h[1] + '</s> → ' + h[2] + '</b></div>').join('') + '</div>' : '') +
+(edit ? '<div class="center">' + (c.reqId ? '<button class="link" style="color:var(--bad)" data-act="cancelReq" data-v="' + c.reqId + '">Cancel request</button>'
+  : rm ? '<button class="link" data-act="chKind" data-v="correction">Keep this shift</button>'
+  : '<button class="link quiet" data-act="chKind" data-v="remove_shift">This shift shouldn’t be here? Request to remove it</button>') + '</div>' : '') +
+'</div>';
 };
+const head2 = (icon, color, label) => '<small><span style="color:' + color + '">' + ic(icon, 14, 2.4) + '</span>' + label + '</small>';
+DOCKS.entry = () => { const e = ENTRIES.find(x => x.id === S.entry), c = S.ch; return e && c && canFix(e) && (c.type === 'remove_shift' || chDirty() || c.reqId) ? DOCKS.change() : ''; };
+// Editing a tile never re-renders the page (that would drop focus mid-typing); this refreshes what depends on it.
+function entrySync() {
+  const c = S.ch, o = chOld(), on = (id, v) => { const el = $('#' + id); if (el) el.classList.toggle('on', v); };
+  on('t-in', toM(c.in) !== o.inM); on('t-out', toM(c.out) !== o.outM);
+  const mins = span(toM(c.in), toM(c.out)), ot = Math.max(0, mins - 480), open = c.type === 'remove_shift' || chDirty() || !!c.reqId;
+  if ($('#v-reg')) { $('#v-reg').textContent = DUR(mins - ot); $('#v-ot').textContent = DUR(ot); }
+  $('#fix').style.display = open ? '' : 'none'; $('#hint').style.display = open ? 'none' : '';
+  $('#chg-summary').innerHTML = chSummary();
+  $('#chg-count').textContent = c.reason.trim().length + ' / 20 characters minimum';
+  $('#dock').innerHTML = DOCKS.entry();
+}
 
 /* ---------- the request form: one screen for all three types ---------- */
 const chEntry = () => ENTRIES.find(e => e.id === S.ch.entryId);
@@ -161,19 +203,20 @@ ${kinds.length > 1 ? `<div class="kinds">${kinds.map(k => `<button class="${c.ty
 ${shift}${fields}
 <div id="chg-summary">${chSummary()}</div>
 <div class="field"><span>Reason <em>*</em></span><div class="opts quick">${QUICK.map(q => `<button data-act="chQuick">${q}</button>`).join('')}</div>
-<div class="in area mt8"><textarea data-ch="reason" placeholder="Explain what should be corrected">${c.reason}</textarea></div><small id="chg-count">${c.reason.trim().length} / 20 characters minimum</small></div>
+<div class="in area mt8"><textarea data-ch="reason" placeholder="${c.type === 'add_shift' ? 'Explain why this shift was not recorded' : c.type === 'remove_shift' ? 'Explain why this shift should be removed' : 'Explain what should be corrected'}">${c.reason}</textarea></div><small id="chg-count">${c.reason.trim().length} / 20 characters minimum</small></div>
 ${c.reqId ? `<button class="btn line sm" style="color:var(--bad)" data-act="cancelReq" data-v="${c.reqId}">Cancel request</button>` : ''}
 </div>`;
 };
 DOCKS.change = () => { const p = chProblem(), c = S.ch; return `<div class="dockbar col">${p ? `<p class="dockhint">${p}</p>` : ''}<button class="btn ${c.type === 'remove_shift' ? 'danger' : ''}" data-act="chSubmit" ${p ? 'disabled' : ''}>${c.reqId ? 'Resubmit request' : c.type === 'remove_shift' ? 'Request removal' : 'Submit request'}</button></div>`; };
 // Typing must not re-render the form (it would drop focus), so only the summary and dock refresh.
 function chSync() {
+  if (S.route === 'entry') { entrySync(); return; }
   $('#chg-summary').innerHTML = chSummary();
   $('#chg-count').textContent = `${S.ch.reason.trim().length} / 20 characters minimum`;
   $('#dock').innerHTML = DOCKS.change();
 }
 document.addEventListener('input', e => { const k = e.target.dataset.ch; if (k) { S.ch[k] = e.target.value; chSync(); } });
-document.addEventListener('change', e => { const k = e.target.dataset.ch; if (k && k !== 'reason') render(true); });
+document.addEventListener('change', e => { const k = e.target.dataset.ch; if (k && k !== 'reason' && S.route !== 'entry') render(true); });
 
 /* ---------- requests list: "My requests" for a worker, "Requests" to review for admin and owner ---------- */
 V.requests = () => {
@@ -226,13 +269,14 @@ const cancelSheet = r => `<div class="sheet-head"><b>Cancel this request?</b><bu
 
 /* ---------- actions (merged into ACT by app.js) ---------- */
 const REQ_ACT = {
-  entry(v) { S.entry = +v; go('entry'); },
+  entry(v) { S.entry = +v; S.ch = null; go('entry'); },
   // v = "type:entryId" or "add_shift::isoDate"; with no entry the form asks which shift
   change(v) { const [type, id, iso] = v.split(':'); chNew(type, +id || null, iso); go('change'); },
   editReq(v) {
     const r = REQUESTS.find(x => x.id === +v), a = after(r);
     S.ch = { type: r.type, entryId: r.entryId, reqId: r.id, old: r.old, lock: true, iso: r.iso, job: a.job, in: HM(a.inM), out: HM(a.outM), reason: r.reason };
-    sheet(false); go('change');
+    sheet(false);
+    if (r.type !== 'add_shift' && ENTRIES.some(e => e.id === r.entryId)) { S.entry = r.entryId; S.ch.old = null; go('entry'); } else go('change');
   },
   chKind(v) { S.ch.type = v; if (v === 'add_shift') { S.ch.entryId = null; } render(true); },
   chJobs() { sheet(jobPickSheet()); },
