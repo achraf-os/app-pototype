@@ -28,6 +28,7 @@ function render(keepScroll) {
   tb.innerHTML = TABS.map(t => `<button class="tab${t[0] === on ? ' on' : ''}" ${t[0] === 'more' ? 'data-act="more"' : `data-go="${t[0]}"`}>${ic(t[2], 25, 1.9)}<span>${t[1]}</span></button>`).join('');
   const fab = $('#fab'); fab.style.display = NO_FAB.includes(S.route) ? 'none' : ''; fab.innerHTML = ic('spark', 26, 1.9);
   $('#panel').innerHTML = PANEL.map(g => `<h4>${g[0]}</h4>${g[1].map(s => `<button class="${S.route === s[0] ? 'on' : ''}" data-go="${s[0]}">${s[1]}</button>`).join('')}`).join('')
+    + `<h4>Appearance</h4><div class="two" style="grid-template-columns:1fr 1fr 1fr">${['light', 'dark', 'system'].map(s => `<button class="${themePref() === s ? 'on' : ''}" data-act="theme" data-v="${s}">${s}</button>`).join('')}</div>`
     + `<h4>Form mode</h4><div class="two">${[['add', false], ['edit', true]].map(m => `<button class="${S.edit === m[1] ? 'on' : ''}" data-act="mode" data-v="${m[0]}">${m[0]}</button>`).join('')}</div>`
     + `<h4>Screen state</h4><div class="two">${['data', 'loading', 'empty', 'error', 'offline'].map(s => `<button class="${S.state === s ? 'on' : ''}" data-act="state" data-v="${s}">${s}</button>`).join('')}</div>`
     + `<h4>Timeclock phase</h4><div class="two">${['ready', 'active', 'break', 'complete'].map(s => `<button class="${S.clock === s ? 'on' : ''}" data-act="phase" data-v="${s}">${s}</button>`).join('')}</div>`
@@ -87,6 +88,7 @@ setInterval(tick, 1000);
 const ACT = {
   back() { if (history.length > 1) history.back(); else go('timeclock'); },
   more() { sheet(moreSheet()); },
+  theme(v) { try { localStorage.setItem('theme', v); } catch (e) { /* private window: applies for this visit only */ } applyTheme(); render(true); },
   closeSheet() { sheet(false); },
   state(v) { S.state = v; render(); },
   phase(v) { S.clock = v; S.since = Date.now(); if (S.route !== 'timeclock') go('timeclock'); else render(); },

@@ -226,6 +226,9 @@ V.settings = () => `${hdrMain()}${title('Settings')}
 <div class="card clip">
 <div class="lrow"><span class="chip blue">${ic('face', 22)}</span><span class="grow"><b class="t-body">Unlock with Face ID</b><span class="t-sub" style="display:block">Your PIN stays as the fallback</span></span><button class="tog ${S.tog.bio ? 'on' : ''}" data-act="tog" data-v="bio" aria-label="Toggle"><i></i></button></div>
 <button class="lrow" data-toast="Change your PIN"><span class="chip indigo">${ic('lock', 22)}</span><span class="grow"><b class="t-body">Change your PIN</b><span class="t-sub" style="display:block">4-digit PIN for this device</span></span>${cv()}</button></div>
+<div class="t-over" style="margin:10px 4px 0">Appearance</div>
+<div class="card p"><div class="row gap12"><span class="chip indigo">${ic('moon', 22)}</span><span class="grow"><b class="t-body">Theme</b><span class="t-sub" style="display:block">${{ light: 'Always light', dark: 'Always dark', system: 'Follows your device' }[themePref()]}</span></span></div>
+<div class="seg mt12">${[['light', 'Light'], ['dark', 'Dark'], ['system', 'System']].map(m => `<button class="${themePref() === m[0] ? 'on' : ''}" data-act="theme" data-v="${m[0]}">${m[1]}</button>`).join('')}</div></div>
 <div class="t-over" style="margin:10px 4px 0">Account</div>
 <div class="card clip">
 <button class="lrow" data-toast="Other accounts on this number"><span class="chip green">${ic('swap', 22)}</span><span class="grow"><b class="t-body">Switch account</b><span class="t-sub" style="display:block">Other accounts on this number</span></span>${cv()}</button>
