@@ -75,7 +75,7 @@ ${on ? `<button class="btn ${S.clock === 'break' ? 'warn' : 'soft'}" data-act="b
 <button class="lrow" data-go="jsa"><span class="chip teal">${ic('shield', 22)}</span><span class="grow"><b class="t-body">Today's JSA needs filling in</b><span class="t-sub" style="display:block">${j.name} · one person fills it in for the crew</span></span>${cv()}</button>
 <button class="lrow" data-go="journeys"><span class="chip green">${ic('route', 22)}</span><span class="grow"><b class="t-body">Making a trip today?</b><span class="t-sub" style="display:block">Tap to plan it before you set off</span></span>${cv()}</button>
 </div>
-<div class="section"><h2 class="t-h2">Today</h2><button data-toast="Pending requests">View requests</button></div>
+<div class="section"><h2 class="t-h2">Today</h2><button class="row gap6" data-go="requests">View requests${reqBadge()}</button></div>
 <div class="card metrics"><div><b>${S.clock === 'ready' ? '0:00' : '7:34'}</b><small>Worked</small></div><div><b>${S.clock === 'ready' ? '0:00' : '0:32'}</b><small>Break</small></div><div><b>0:00</b><small>Overtime</small></div></div>
 ${S.clock === 'ready' ? '<p class="t-sub center" style="padding:8px">No entries yet today — clock in to start</p>' : TODAY_ENTRIES.map(e => `<button class="day" data-go="correction"><div class="grow"><b>${e.in} – ${e.out}</b><small>${e.job}</small></div><b>${e.hrs}</b>${pill(e.status === 'approved' ? 'ok' : 'warn', e.status === 'approved' ? 'Approved' : 'Pending')}</button>`).join('')}
 </div>`)}`;
@@ -89,12 +89,36 @@ ${guard({ error: "Couldn't load statistics — tap to retry", icon: 'users', emp
 <div class="card p row between"><button class="icon-btn sq" data-toast="Previous day">${ic('chevL', 22)}</button><div class="center"><b class="t-h2">Thu 8 Oct</b><p class="t-sub">Today</p></div><button class="icon-btn sq" data-toast="Next day">${ic('chevR', 22)}</button></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
 ${[['users', 'blue', '2', 'On the clock now'], ['user', 'green', '3', 'Employees worked'], ['calendar', 'indigo', '3', 'Shifts worked'], ['dollar', 'orange', '$412', 'Labor cost']].map(t => `<div class="card p"><span class="chip ${t[1]}">${ic(t[0], 22)}</span><div class="t-num mt8">${t[2]}</div><p class="t-sub">${t[3]}</p></div>`).join('')}</div>
+<button class="card clip" data-go="requests"><span class="lrow"><span class="chip amber">${ic('edit', 22)}</span><span class="grow"><b class="t-body">Correction requests</b><span class="t-sub" style="display:block">${reqPending().length ? reqPending().length + ' waiting for your review' : 'Nothing waiting for review'}</span></span>${reqBadge()}${cv()}</span></button>
 <div class="section"><h2 class="t-h2">On the clock now</h2><span>2 active</span></div>
 <div class="card clip">${TEAM.filter(t => t.active).map(teamRow).join('')}</div>
 <div class="section"><h2 class="t-h2">Clocked in &amp; out</h2></div>
 <div class="card clip">${TEAM.filter(t => !t.active).map(teamRow).join('')}</div>
 </div>`)}`;
 const teamRow = t => `<button class="lrow" data-toast="${t.name}">${av(t.avatar, t.name)}<span class="grow"><b class="t-body">${t.name}</b><span class="t-sub trunc" style="display:block">${t.job} · In ${t.in}${t.out ? ' · Out ' + t.out : ''}</span></span>${t.active ? pill('ok', 'Active') : `<b class="t-body">${t.hrs}</b>`}</button>`;
+
+/* ---------------- correction requests: "My requests" for a worker, "Requests" to review for admin/owner ---------------- */
+const reviewer = () => S.role !== 'worker';
+const reqList = () => REQUESTS.filter(r => reviewer() ? true : r.mine);
+const reqPending = () => reqList().filter(r => r.st === 'pending');
+const reqBadge = () => reqPending().length ? `<em class="count">${reqPending().length}</em>` : '';
+V.requests = () => {
+  const all = reqList(), shown = all.filter(r => S.rf === 'all' || r.st === S.rf), rev = reviewer();
+  const chips = [['all', 'All'], ['pending', 'Pending'], ['approved', 'Approved'], ['declined', 'Declined'], ['withdrawn', 'Withdrawn']];
+  return `${hdrBack('Timeclock')}
+<div class="pad"><h1 class="t-title">${rev ? 'Requests' : 'My requests'}</h1><p class="t-sub mt4">${rev ? 'Correction requests from your team' : 'Corrections you have asked for'}</p></div>
+<div class="pad mt12"><div class="fchips">${chips.map(c => `<button class="${S.rf === c[0] ? 'on' : ''}" data-act="rf" data-v="${c[0]}">${c[1]}<em>${all.filter(r => c[0] === 'all' || r.st === c[0]).length}</em></button>`).join('')}</div></div>
+${guard({ error: "Couldn't load your requests — tap to retry", icon: 'inbox', empty: rev ? 'No requests to review' : 'No requests yet', emptySub: rev ? 'Correction requests from your team will appear here' : 'Request a correction from any timesheet entry' }, () => `
+<div class="stack">${shown.length ? shown.map(r => `<div class="card p" data-s="${r.who.toLowerCase()}">
+<div class="row gap12">${rev ? av(r.avatar, r.who) : `<span class="chip amber">${ic('edit', 22)}</span>`}<div class="grow"><b class="t-card trunc" style="display:block">${rev ? r.who : r.type}</b><span class="t-sub">${rev ? r.type + ' · ' : ''}${r.job}</span></div>${stPill(REQ_ST, r.st)}</div>
+<div class="chg mt12"><div><small>Recorded</small><b>${r.from}</b></div>${ic('chevR', 18, 2.2)}<div><small>Requested time</small><b class="c-pri">${r.to}</b></div></div>
+<p class="t-sub mt12" style="color:var(--text)">${r.reason}</p>
+<p class="t-sub mt8">Submitted ${r.sent}${r.by ? ' · Reviewed by ' + r.by + ' on ' + r.on : ''}</p>
+${r.note ? `<div class="note ${r.st === 'declined' ? 'warn' : ''} mt8">${ic('doc', 16)}${r.note}</div>` : ''}
+${r.st !== 'pending' ? '' : rev && !r.mine ? `<div class="row gap12 mt12"><button class="btn sm" data-act="reqSet" data-v="${r.id}:approved">${ic('check', 18, 2.4)}Approve</button><button class="btn line sm" style="color:var(--bad)" data-act="reqSet" data-v="${r.id}:declined">${ic('x', 18, 2.4)}Decline</button></div>`
+    : `<div class="row gap12 mt12"><button class="btn soft sm" data-go="correction">${ic('edit', 18)}Edit</button><button class="btn line sm" data-act="reqSet" data-v="${r.id}:withdrawn">Withdraw</button></div>`}
+</div>`).join('') : '<div class="card p center"><p class="t-sub" style="padding:14px 0">No requests match this filter</p></div>'}</div>`)}`;
+};
 
 /* ---------------- shifts + timesheet (one tab, segmented) ---------------- */
 const tsSeg = on => `<div class="pad mt8"><div class="seg">${[['shifts', 'Shifts'], ['timesheet', 'Timesheet']].map(s => `<button class="${on === s[0] ? 'on' : ''}" data-go="${s[0]}">${s[1]}</button>`).join('')}</div></div>`;

@@ -5,14 +5,14 @@ const $ = s => document.querySelector(s);
 
 // [route, label, icon]; "more" opens the sheet instead of a screen.
 const TABS = [['timeclock', 'Clock', 'clock'], ['timesheet', 'Timesheet', 'calendar'], ['vehicles', 'Vehicles', 'car'], ['assets', 'Assets', 'box'], ['more', 'More', 'dots']];
-const tabOf = r => r === 'timeclock' ? 'timeclock' : (r === 'timesheet' || r === 'shifts') ? 'timesheet' : r.startsWith('vehicle') ? 'vehicles' : r.startsWith('asset') ? 'assets' : 'more';
+const tabOf = r => (r === 'timeclock' || r === 'requests') ? 'timeclock' : (r === 'timesheet' || r === 'shifts') ? 'timesheet' : r.startsWith('vehicle') ? 'vehicles' : r.startsWith('asset') ? 'assets' : 'more';
 const FORMS = ['vehicleForm', 'assetForm', 'assetCheckout', 'correction', 'journeyForm', 'incident', 'jsaForm'];
 const NO_TABS = ['login', 'otp', 'unlock', 'oscar', ...FORMS];
 const NO_FAB = [...NO_TABS, 'vehicle', 'asset', 'profile'];
 
 const PANEL = [
   ['Sign in', [['login', 'Log in'], ['otp', 'Enter the code'], ['unlock', 'PIN unlock']]],
-  ['Tabs', [['timeclock', 'Timeclock'], ['timesheet', 'Timesheet'], ['shifts', 'Shifts'], ['vehicles', 'Vehicles'], ['vehicle', 'Vehicle detail'], ['assets', 'Assets'], ['asset', 'Asset detail']]],
+  ['Tabs', [['timeclock', 'Timeclock'], ['requests', 'Correction requests'], ['timesheet', 'Timesheet'], ['shifts', 'Shifts'], ['vehicles', 'Vehicles'], ['vehicle', 'Vehicle detail'], ['assets', 'Assets'], ['asset', 'Asset detail']]],
   ['More', [['journeys', 'Journeys'], ['jsa', 'JSA'], ['oscar', 'Oscar'], ['profile', 'Profile'], ['settings', 'Settings']]],
   ['Forms', [['vehicleForm', 'Add / edit vehicle'], ['assetForm', 'Add / edit asset'], ['assetCheckout', 'Asset check out / in'], ['correction', 'Request correction'], ['journeyForm', 'New journey plan'], ['incident', 'Report an incident'], ['jsaForm', 'JSA form']]],
 ];
@@ -31,7 +31,7 @@ function render(keepScroll) {
     + `<h4>Form mode</h4><div class="two">${[['add', false], ['edit', true]].map(m => `<button class="${S.edit === m[1] ? 'on' : ''}" data-act="mode" data-v="${m[0]}">${m[0]}</button>`).join('')}</div>`
     + `<h4>Screen state</h4><div class="two">${['data', 'loading', 'empty', 'error', 'offline'].map(s => `<button class="${S.state === s ? 'on' : ''}" data-act="state" data-v="${s}">${s}</button>`).join('')}</div>`
     + `<h4>Timeclock phase</h4><div class="two">${['ready', 'active', 'break', 'complete'].map(s => `<button class="${S.clock === s ? 'on' : ''}" data-act="phase" data-v="${s}">${s}</button>`).join('')}</div>`
-    + `<h4>Signed in as</h4><div class="two">${['worker', 'owner'].map(s => `<button class="${S.role === s ? 'on' : ''}" data-act="role" data-v="${s}">${s}</button>`).join('')}</div>`;
+    + `<h4>Signed in as</h4><div class="two" style="grid-template-columns:1fr 1fr 1fr">${['worker', 'admin', 'owner'].map(s => `<button class="${S.role === s ? 'on' : ''}" data-act="role" data-v="${s}">${s}</button>`).join('')}</div>`;
   view.scrollTop = keepScroll ? top : 0;
   if (S.q) filter();
   tick();
@@ -90,7 +90,15 @@ const ACT = {
   closeSheet() { sheet(false); },
   state(v) { S.state = v; render(); },
   phase(v) { S.clock = v; S.since = Date.now(); if (S.route !== 'timeclock') go('timeclock'); else render(); },
-  role(v) { S.role = v; if (S.route !== 'timeclock') go('timeclock'); else render(); },
+  // Changing role keeps you on the requests screen, so worker and reviewer views can be compared.
+  role(v) { S.role = v; S.rf = 'all'; if (S.route !== 'timeclock' && S.route !== 'requests') go('timeclock'); else render(); },
+  rf(v) { S.rf = v; render(true); },
+  reqSet(v) {
+    const [id, st] = v.split(':'), r = REQUESTS.find(x => x.id === +id);
+    r.st = st;
+    if (st !== 'withdrawn') { r.by = ME.first + ' ' + ME.last; r.on = '8 Oct'; }
+    render(true); toast({ approved: 'Request approved', declined: 'Request declined', withdrawn: 'Request withdrawn' }[st]);
+  },
   // The ring's centre is the toggle: clocked out -> in, in/on break -> out (day complete).
   clock() {
     const on = S.clock === 'active' || S.clock === 'break';
