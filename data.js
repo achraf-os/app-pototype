@@ -71,17 +71,6 @@ const TEAM = [
   { name: 'Sam Lee', avatar: '', job: 'Northline Station', in: '6:30 am', out: '9:15 am', hrs: '2:45', active: false },
 ];
 
-/* Correction requests. A worker sees only their own (mine: true); an admin or owner reviews everyone's. */
-const REQUESTS = [
-  { id: 1, who: 'Alex Morgan', avatar: 'img/avatar-alex.jpg', mine: true, type: 'Clock out', job: 'Riverside Footbridge', from: 'Wed 7 Oct, 3:28 pm', to: 'Wed 7 Oct, 3:00 pm', reason: 'Forgot to clock out when I left site — I finished at 3 pm.', sent: '7 Oct', st: 'pending' },
-  { id: 2, who: 'Jordan Davis', avatar: 'img/avatar-jordan.jpg', mine: false, type: 'Clock in', job: 'Riverside Footbridge', from: 'Thu 8 Oct, 7:22 am', to: 'Thu 8 Oct, 6:50 am', reason: 'No signal at the gate, the app clocked me in late.', sent: '8 Oct', st: 'pending' },
-  { id: 3, who: 'Sam Lee', avatar: '', mine: false, type: 'Break end', job: 'Northline Station', from: 'Tue 6 Oct, 1:10 pm', to: 'Tue 6 Oct, 12:30 pm', reason: 'Ended my break at 12:30 but did not tap End Break.', sent: '6 Oct', st: 'pending' },
-  { id: 4, who: 'Alex Morgan', avatar: 'img/avatar-alex.jpg', mine: true, type: 'Clock in', job: 'Westgate Depot', from: 'Mon 5 Oct, 7:15 am', to: 'Mon 5 Oct, 6:58 am', reason: 'Phone was flat on arrival, clocked in once it charged.', sent: '5 Oct', st: 'approved', by: 'Chris Taylor', on: '5 Oct', note: 'Confirmed with the site log.' },
-  { id: 5, who: 'Chris Taylor', avatar: 'img/avatar-chris.jpg', mine: false, type: 'Clock out', job: 'Westgate Depot', from: 'Fri 2 Oct, 5:40 pm', to: 'Fri 2 Oct, 3:30 pm', reason: 'Left at 3:30 for a medical appointment.', sent: '2 Oct', st: 'declined', by: 'Dana Wells', on: '3 Oct', note: 'Gate log shows you left at 5:35 pm.' },
-  { id: 6, who: 'Alex Morgan', avatar: 'img/avatar-alex.jpg', mine: true, type: 'Break start', job: 'Riverside Footbridge', from: 'Thu 1 Oct, 12:00 pm', to: 'Thu 1 Oct, 12:15 pm', reason: 'Started my break later than recorded.', sent: '1 Oct', st: 'withdrawn' },
-];
-const REQ_ST = { pending: ['warn', 'Pending'], approved: ['ok', 'Approved'], declined: ['bad', 'Declined'], withdrawn: ['neutral', 'Withdrawn'] };
-
 const MORE = [
   ['shifts', 'Shifts', 'calendar', 'blue'], ['journeys', 'Journeys', 'route', 'green'], ['jsa', 'JSA', 'shield', 'teal'],
   ['oscar', 'Oscar', 'spark', 'indigo'], ['profile', 'Profile', 'user', 'orange'], ['settings', 'Settings', 'gear', 'slate'],
@@ -92,7 +81,7 @@ const S = {
   route: 'timeclock', state: 'data', role: 'worker',
   clock: 'ready', since: 0, job: 1,
   edit: false, asset: 'DRL-0142', atab: 'Details', jsa: 1, jstep: 0,
-  rf: 'all',
+  rf: 'pending', rx: 0, entry: 103, ch: null,
   tsMode: 'Week', day: 'Thu', vf: 'mine', car: 'v04', vtab: 'Details', aseg: 'Assets', pin: 0, q: '',
   tog: { bio: true },
   chat: [['bot', 'Hi Alex — I can look up your jobs, shifts, assets and timesheets. What do you need?']],

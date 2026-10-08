@@ -5,16 +5,16 @@ const $ = s => document.querySelector(s);
 
 // [route, label, icon]; "more" opens the sheet instead of a screen.
 const TABS = [['timeclock', 'Clock', 'clock'], ['timesheet', 'Timesheet', 'calendar'], ['vehicles', 'Vehicles', 'car'], ['assets', 'Assets', 'box'], ['more', 'More', 'dots']];
-const tabOf = r => (r === 'timeclock' || r === 'requests') ? 'timeclock' : (r === 'timesheet' || r === 'shifts') ? 'timesheet' : r.startsWith('vehicle') ? 'vehicles' : r.startsWith('asset') ? 'assets' : 'more';
-const FORMS = ['vehicleForm', 'assetForm', 'assetCheckout', 'correction', 'journeyForm', 'incident', 'jsaForm'];
+const tabOf = r => (r === 'timeclock' || r === 'requests') ? 'timeclock' : (r === 'timesheet' || r === 'shifts' || r === 'entry') ? 'timesheet' : r.startsWith('vehicle') ? 'vehicles' : r.startsWith('asset') ? 'assets' : 'more';
+const FORMS = ['vehicleForm', 'assetForm', 'assetCheckout', 'change', 'journeyForm', 'incident', 'jsaForm'];
 const NO_TABS = ['login', 'otp', 'unlock', 'oscar', ...FORMS];
 const NO_FAB = [...NO_TABS, 'vehicle', 'asset', 'profile'];
 
 const PANEL = [
   ['Sign in', [['login', 'Log in'], ['otp', 'Enter the code'], ['unlock', 'PIN unlock']]],
-  ['Tabs', [['timeclock', 'Timeclock'], ['requests', 'Correction requests'], ['timesheet', 'Timesheet'], ['shifts', 'Shifts'], ['vehicles', 'Vehicles'], ['vehicle', 'Vehicle detail'], ['assets', 'Assets'], ['asset', 'Asset detail']]],
+  ['Tabs', [['timeclock', 'Timeclock'], ['requests', 'Change requests'], ['entry', 'Entry detail'], ['timesheet', 'Timesheet'], ['shifts', 'Shifts'], ['vehicles', 'Vehicles'], ['vehicle', 'Vehicle detail'], ['assets', 'Assets'], ['asset', 'Asset detail']]],
   ['More', [['journeys', 'Journeys'], ['jsa', 'JSA'], ['oscar', 'Oscar'], ['profile', 'Profile'], ['settings', 'Settings']]],
-  ['Forms', [['vehicleForm', 'Add / edit vehicle'], ['assetForm', 'Add / edit asset'], ['assetCheckout', 'Asset check out / in'], ['correction', 'Request correction'], ['journeyForm', 'New journey plan'], ['incident', 'Report an incident'], ['jsaForm', 'JSA form']]],
+  ['Forms', [['vehicleForm', 'Add / edit vehicle'], ['assetForm', 'Add / edit asset'], ['assetCheckout', 'Asset check out / in'], ['change', 'Request a change'], ['journeyForm', 'New journey plan'], ['incident', 'Report an incident'], ['jsaForm', 'JSA form']]],
 ];
 
 function render(keepScroll) {
@@ -91,7 +91,7 @@ const ACT = {
   state(v) { S.state = v; render(); },
   phase(v) { S.clock = v; S.since = Date.now(); if (S.route !== 'timeclock') go('timeclock'); else render(); },
   // Changing role keeps you on the requests screen, so worker and reviewer views can be compared.
-  role(v) { S.role = v; S.rf = 'all'; if (S.route !== 'timeclock' && S.route !== 'requests') go('timeclock'); else render(); },
+  role(v) { S.role = v; S.rf = 'pending'; S.rx = 0; if (S.route !== 'timeclock' && S.route !== 'requests') go('timeclock'); else render(); },
   rf(v) { S.rf = v; render(true); },
   reqSet(v) {
     const [id, st] = v.split(':'), r = REQUESTS.find(x => x.id === +id);
@@ -137,6 +137,8 @@ const ACT = {
     render(); $('#view').scrollTop = 1e6;
   },
 };
+
+Object.assign(ACT, REQ_ACT);
 
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-act],[data-go],[data-toast]'); if (!t) return;

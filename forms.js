@@ -78,18 +78,6 @@ ${F.area('Notes', '', 'Optional')}
 };
 DOCKS.assetCheckout = () => { const inUse = ASSETS.find(x => x.id === S.asset).st === 'in_use'; return dockBtn(inUse ? 'Check In' : 'Check Out', { done: inUse ? 'Asset checked in' : 'Asset checked out' }); };
 
-/* ---------------- timesheet: request correction ---------------- */
-V.correction = () => `${hdrBack('Request correction')}<div class="stack">
-${F.sec('Original entry')}
-<div class="card p" style="padding-top:2px;padding-bottom:2px"><div class="kv">Clock in<b>Wed 7 Oct, 6:55 am</b></div><div class="kv">Clock out<b>Wed 7 Oct, 3:28 pm</b></div><div class="kv">Job<b>Riverside Footbridge</b></div><div class="kv">Status<b>${pill('warn', 'Pending')}</b></div></div>
-${F.sec('Correction details')}
-${F.opts('Event type', ['Clock in', 'Clock out', 'Break start', 'Break end'], 'Clock out')}
-${F.select('Job', 'Riverside Footbridge', 'Select job', { req: 1 })}
-<div class="field"><span>Date &amp; time <em>*</em> ${pill('info', 'Edited')}</span><button class="in" data-toast="Select date & time"><span class="grow" style="margin:0;font-size:16px;font-weight:400">Wed 7 Oct 2026, 3:00 pm</span><span class="c-2">${ic('calendar', 20, 1.9)}</span></button><button class="link" data-toast="Reset to original value">Reset to original value</button></div>
-${F.area('Reason', '', 'Explain what should be corrected (at least 20 characters)', { req: 1, msg: 'Please add at least 20 characters' })}
-</div>`;
-DOCKS.correction = () => dockBtn('Submit request', { done: 'Correction request submitted' });
-
 /* ---------------- journey plan: six steps ---------------- */
 const J_STEPS = ['Journey', 'Driver & fatigue', 'Vehicle', 'Passengers', 'Route & hazards', 'Contacts'];
 const J_BODY = [

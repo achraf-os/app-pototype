@@ -77,7 +77,7 @@ ${on ? `<button class="btn ${S.clock === 'break' ? 'warn' : 'soft'}" data-act="b
 </div>
 <div class="section"><h2 class="t-h2">Today</h2><button class="row gap6" data-go="requests">View requests${reqBadge()}</button></div>
 <div class="card metrics"><div><b>${S.clock === 'ready' ? '0:00' : '7:34'}</b><small>Worked</small></div><div><b>${S.clock === 'ready' ? '0:00' : '0:32'}</b><small>Break</small></div><div><b>0:00</b><small>Overtime</small></div></div>
-${S.clock === 'ready' ? '<p class="t-sub center" style="padding:8px">No entries yet today — clock in to start</p>' : TODAY_ENTRIES.map(e => `<button class="day" data-go="correction"><div class="grow"><b>${e.in} – ${e.out}</b><small>${e.job}</small></div><b>${e.hrs}</b>${pill(e.status === 'approved' ? 'ok' : 'warn', e.status === 'approved' ? 'Approved' : 'Pending')}</button>`).join('')}
+${S.clock === 'ready' ? '<p class="t-sub center" style="padding:8px">No entries yet today — clock in to start</p>' : todayRows()}
 </div>`)}`;
 };
 
@@ -97,29 +97,6 @@ ${[['users', 'blue', '2', 'On the clock now'], ['user', 'green', '3', 'Employees
 </div>`)}`;
 const teamRow = t => `<button class="lrow" data-toast="${t.name}">${av(t.avatar, t.name)}<span class="grow"><b class="t-body">${t.name}</b><span class="t-sub trunc" style="display:block">${t.job} · In ${t.in}${t.out ? ' · Out ' + t.out : ''}</span></span>${t.active ? pill('ok', 'Active') : `<b class="t-body">${t.hrs}</b>`}</button>`;
 
-/* ---------------- correction requests: "My requests" for a worker, "Requests" to review for admin/owner ---------------- */
-const reviewer = () => S.role !== 'worker';
-const reqList = () => REQUESTS.filter(r => reviewer() ? true : r.mine);
-const reqPending = () => reqList().filter(r => r.st === 'pending');
-const reqBadge = () => reqPending().length ? `<em class="count">${reqPending().length}</em>` : '';
-V.requests = () => {
-  const all = reqList(), shown = all.filter(r => S.rf === 'all' || r.st === S.rf), rev = reviewer();
-  const chips = [['all', 'All'], ['pending', 'Pending'], ['approved', 'Approved'], ['declined', 'Declined'], ['withdrawn', 'Withdrawn']];
-  return `${hdrBack('Timeclock')}
-<div class="pad"><h1 class="t-title">${rev ? 'Requests' : 'My requests'}</h1><p class="t-sub mt4">${rev ? 'Correction requests from your team' : 'Corrections you have asked for'}</p></div>
-<div class="pad mt12"><div class="fchips">${chips.map(c => `<button class="${S.rf === c[0] ? 'on' : ''}" data-act="rf" data-v="${c[0]}">${c[1]}<em>${all.filter(r => c[0] === 'all' || r.st === c[0]).length}</em></button>`).join('')}</div></div>
-${guard({ error: "Couldn't load your requests — tap to retry", icon: 'inbox', empty: rev ? 'No requests to review' : 'No requests yet', emptySub: rev ? 'Correction requests from your team will appear here' : 'Request a correction from any timesheet entry' }, () => `
-<div class="stack">${shown.length ? shown.map(r => `<div class="card p" data-s="${r.who.toLowerCase()}">
-<div class="row gap12">${rev ? av(r.avatar, r.who) : `<span class="chip amber">${ic('edit', 22)}</span>`}<div class="grow"><b class="t-card trunc" style="display:block">${rev ? r.who : r.type}</b><span class="t-sub">${rev ? r.type + ' · ' : ''}${r.job}</span></div>${stPill(REQ_ST, r.st)}</div>
-<div class="chg mt12"><div><small>Recorded</small><b>${r.from}</b></div>${ic('chevR', 18, 2.2)}<div><small>Requested time</small><b class="c-pri">${r.to}</b></div></div>
-<p class="t-sub mt12" style="color:var(--text)">${r.reason}</p>
-<p class="t-sub mt8">Submitted ${r.sent}${r.by ? ' · Reviewed by ' + r.by + ' on ' + r.on : ''}</p>
-${r.note ? `<div class="note ${r.st === 'declined' ? 'warn' : ''} mt8">${ic('doc', 16)}${r.note}</div>` : ''}
-${r.st !== 'pending' ? '' : rev && !r.mine ? `<div class="row gap12 mt12"><button class="btn sm" data-act="reqSet" data-v="${r.id}:approved">${ic('check', 18, 2.4)}Approve</button><button class="btn line sm" style="color:var(--bad)" data-act="reqSet" data-v="${r.id}:declined">${ic('x', 18, 2.4)}Decline</button></div>`
-    : `<div class="row gap12 mt12"><button class="btn soft sm" data-go="correction">${ic('edit', 18)}Edit</button><button class="btn line sm" data-act="reqSet" data-v="${r.id}:withdrawn">Withdraw</button></div>`}
-</div>`).join('') : '<div class="card p center"><p class="t-sub" style="padding:14px 0">No requests match this filter</p></div>'}</div>`)}`;
-};
-
 /* ---------------- shifts + timesheet (one tab, segmented) ---------------- */
 const tsSeg = on => `<div class="pad mt8"><div class="seg">${[['shifts', 'Shifts'], ['timesheet', 'Timesheet']].map(s => `<button class="${on === s[0] ? 'on' : ''}" data-go="${s[0]}">${s[1]}</button>`).join('')}</div></div>`;
 
@@ -134,7 +111,7 @@ ${guard({ error: "Couldn't load timesheets — tap to retry", icon: 'doc', empty
 <div class="bar mt12"><i style="width:${ok / 40 * 100}%;background:var(--ok-solid)"></i><i style="width:${pend / 40 * 100}%;background:var(--warn-solid)"></i></div>
 <div class="meta mt12"><span><i style="width:9px;height:9px;border-radius:50%;background:var(--ok-solid)"></i>Approved <b>${ok.toFixed(1)}</b></span><span><i style="width:9px;height:9px;border-radius:50%;background:var(--warn-solid)"></i>Pending <b>${pend.toFixed(1)}</b></span></div></div>
 <div class="section"><h2 class="t-h2">Daily entries</h2><div class="seg" style="width:128px;height:32px">${['Day', 'Week'].map(m => `<button style="line-height:26px;font-size:13px" class="${S.tsMode === m ? 'on' : ''}" data-act="tsMode" data-v="${m}">${m}</button>`).join('')}</div></div>
-${(S.tsMode === 'Day' ? WEEK.filter(d => d.d === 'Thu') : WEEK).map(d => `<button class="day" ${d.st === 'none' ? 'data-toast="No time recorded for this day"' : 'data-go="correction"'}><div class="d"><b>${d.d}</b><small>${d.n}</small></div><i></i><div class="grow"><b>${d.hrs ? d.hrs.toFixed(1) + ' hrs' : '– hrs'}</b><small>${d.in ? 'In ' + d.in + (d.out ? ' · Out ' + d.out : '') : 'No time recorded'}</small></div>${pill(P[d.st][0], P[d.st][1])}</button>`).join('')}
+${tsRows()}
 </div>`)}`;
 };
 
