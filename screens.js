@@ -155,17 +155,36 @@ V.vehicle = () => {
 <div class="stack">${body}</div>`;
 };
 
-/* ---------------- assets ---------------- */
+/* ---------------- assets (same pattern as vehicles: photo cards -> detail -> edit) ---------------- */
+const assetPhoto = (a, h) => a.photo ? `<img class="photo" src="${a.photo}" alt="${a.name}" style="height:${h}px">` : `<div class="ph" style="height:${h}px">${ic('wrench', 44, 1.5)}</div>`;
+const assetWhere = a => a.st === 'in_use' ? ['Deployed to', a.loc, 'user'] : ['Location', a.loc, 'pin'];
+
 V.assets = () => {
   const locs = {}; ASSETS.forEach(a => { if (a.st !== 'in_use') locs[a.loc] = (locs[a.loc] || 0) + 1; });
-  return `${hdrMain()}${title('Assets', '', `<button class="icon-btn sq" data-act="form" data-v="assetForm:add" aria-label="Add Asset">${ic('plus', 24)}</button>`)}
-<div class="pad mt12"><div class="search"><label>${ic('search', 20, 1.9)}<input id="q" placeholder="Search tools" value="${S.q}"></label><button class="icon-btn box" data-toast="Filter by employee" aria-label="Filter">${ic('sliders', 22, 1.9)}</button></div></div>
-<div class="pad mt12"><div class="seg">${['Assets', 'Locations'].map(s => `<button class="${S.aseg === s ? 'on' : ''}" data-act="aseg" data-v="${s}">${s}</button>`).join('')}</div></div>
-${guard({ error: "Couldn't load assets — tap to retry", icon: 'box', empty: 'No assets yet', emptySub: 'Add the tools and equipment your company owns to start tracking them', cta: 'Add Asset', tall: 132 }, () => S.aseg === 'Locations'
+  return `${hdrMain()}${title('Assets', 'Tools and equipment on your sites', `<button class="icon-btn sq" data-act="form" data-v="assetForm:add" aria-label="Add Asset">${ic('plus', 24)}</button>`)}
+<div class="pad mt12"><div class="search"><label>${ic('search', 20, 1.9)}<input id="q" placeholder="Search tools" value="${S.q}"></label><button class="icon-btn box" data-toast="Scan serial barcode" aria-label="Scan serial barcode">${ic('scan', 22, 1.9)}</button></div></div>
+<div class="pad mt12"><div class="fchips">${[['Assets', ASSETS.length], ['Locations', Object.keys(locs).length]].map(f => `<button class="${S.aseg === f[0] ? 'on' : ''}" data-act="aseg" data-v="${f[0]}">${f[0]}<em>${f[1]}</em></button>`).join('')}</div></div>
+${guard({ error: "Couldn't load assets — tap to retry", icon: 'box', empty: 'No assets yet', emptySub: 'Add the tools and equipment your company owns to start tracking them', cta: 'Add Asset', tall: 230 }, () => S.aseg === 'Locations'
     ? `<div class="stack">${Object.keys(locs).map(k => `<button class="card clip" data-toast="${k}"><span class="lrow"><span class="chip blue">${ic('pin', 22)}</span><span class="grow"><b class="t-body">${k}</b><span class="t-sub" style="display:block">${locs[k]} asset${locs[k] > 1 ? 's' : ''}</span></span>${cv()}</span></button>`).join('')}</div>`
-    : `<div class="stack"><div class="row between t-sub"><span>All Assets (${ASSETS.length})</span><span>Available: ${ASSETS.filter(a => a.st === 'available').length} · Deployed: ${ASSETS.filter(a => a.st === 'in_use').length}</span></div>
-${ASSETS.map(a => `<button class="card raise hcard" data-act="asset" data-v="${a.id}" data-s="${(a.name + ' ' + a.id + ' ' + a.loc).toLowerCase()}">${a.photo ? `<img src="${a.photo}" alt="${a.name}">` : `<span class="chip slate" style="width:116px;height:116px">${ic('wrench', 36, 1.6)}</span>`}
-<div><b class="t-card trunc" style="display:block">${a.name}</b><p class="t-sub mt4">ID ${a.id}</p><div class="row gap6 mt8" style="flex-wrap:wrap">${stPill(ASSET_ST, a.st)}${stPill(TAG_ST, a.tag)}</div><p class="t-sub row gap6 mt8">${ic(a.st === 'in_use' ? 'user' : 'pin', 15)}${a.loc}</p></div></button>`).join('')}</div>`)}`;
+    : `<div class="stack">${ASSETS.map(a => { const w = assetWhere(a); return `<button class="card raise clip" data-act="asset" data-v="${a.id}" data-s="${(a.name + ' ' + a.id + ' ' + a.loc).toLowerCase()}">
+<div style="position:relative">${assetPhoto(a, 150)}${stPill(ASSET_ST, a.st, 'float')}</div>
+<div style="padding:12px 14px 14px"><div class="row between gap8"><b class="t-h2 trunc">${a.name}</b><span class="idtag">${a.id}</span></div><p class="t-sub mt4">${a.maker} · ${a.cat}</p>
+<div class="vfoot"><span class="avatar sm">${ic(w[2], 18)}</span><div class="grow"><small>${w[0]}</small><b>${w[1]}</b></div><div style="text-align:right"><small>Test &amp; Tag</small><b style="color:var(--${TAG_ST[a.tag][0] === 'ok' ? 'ok' : TAG_ST[a.tag][0] === 'warn' ? 'warn' : 'bad'})">${TAG_ST[a.tag][2]}</b></div>${cv()}</div></div></button>`; }).join('')}</div>`)}`;
+};
+
+V.asset = () => {
+  const a = ASSETS.find(x => x.id === S.asset), out = a.st === 'in_use', w = assetWhere(a);
+  const body = S.atab === 'Details' ? `<div class="card p" style="padding-top:2px;padding-bottom:2px">${[['Asset Name', a.name], ['Asset ID', a.id], ['Serial Number', a.serial], ['Manufacturer', a.maker], ['Supplier', a.supplier], [w[0], w[1]], ['Next Test Due', a.due]].map(r => `<div class="kv">${r[0]}<b>${r[1]}</b></div>`).join('')}</div>
+${a.st === 'available' || out ? `<div class="row gap12"><button class="btn" data-go="assetCheckout">${ic('swap', 20)}${out ? 'Check In' : 'Check Out'}</button><button class="btn soft" data-toast="Transfer to">${ic('route', 20)}Transfer</button></div>` : `<div class="note warn">${ic('lock', 16)}This asset is ${ASSET_ST[a.st][1].toLowerCase()} and can't be checked out.</div>`}`
+    : S.atab === 'History' ? (a.hist.length ? a.hist.map(h => `<div class="card clip"><span class="lrow"><span class="chip ${h[2] ? 'slate' : 'blue'}">${ic('user', 22)}</span><span class="grow"><b class="t-body">${h[0]}</b><span class="t-sub" style="display:block">Taken: ${h[1]}${h[2] ? ' · Returned: ' + h[2] : ''}</span></span>${pill(h[2] ? 'neutral' : 'info', h[2] ? 'Returned' : 'Currently out')}</span></div>`).join('') : '<div class="card p center"><p class="t-sub" style="padding:14px 0">No checkouts yet</p></div>')
+    : `<div class="field"><span>Images</span><div class="upl">${a.photo ? `<i style="background-image:url(${a.photo})"></i>` : ''}<button data-toast="Add images">${ic('plus', 24)}<small>Add</small></button></div></div>
+<div class="card clip"><button class="lrow" data-toast="Click to preview"><span class="chip red">${ic('doc', 22)}</span><span class="grow"><b class="t-body">Invoice</b><span class="t-sub" style="display:block">invoice-${a.id.toLowerCase()}.pdf</span></span>${cv()}</button></div>`;
+  return `${hdrBack('Asset', `<button class="icon-btn" data-act="form" data-v="assetForm:edit" aria-label="Edit Asset">${ic('edit', 22)}</button>`)}
+${assetPhoto(a, 210)}
+<div class="pad" style="margin-top:14px"><div class="row between gap8"><h1 class="t-title trunc" style="font-size:25px">${a.name}</h1>${stPill(ASSET_ST, a.st)}</div>
+<div class="row gap12 mt8"><span class="idtag">${a.id}</span>${stPill(TAG_ST, a.tag)}</div></div>
+<div class="utabs mt12">${['Details', 'History', 'Files'].map(t => `<button class="${S.atab === t ? 'on' : ''}" data-act="atab" data-v="${t}">${t}</button>`).join('')}</div>
+<div class="stack">${body}</div>`;
 };
 
 /* ---------------- journeys ---------------- */

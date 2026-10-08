@@ -5,14 +5,14 @@ const $ = s => document.querySelector(s);
 
 // [route, label, icon]; "more" opens the sheet instead of a screen.
 const TABS = [['timeclock', 'Clock', 'clock'], ['timesheet', 'Timesheet', 'calendar'], ['vehicles', 'Vehicles', 'car'], ['assets', 'Assets', 'box'], ['more', 'More', 'dots']];
-const tabOf = r => r === 'timeclock' ? 'timeclock' : (r === 'timesheet' || r === 'shifts') ? 'timesheet' : r.startsWith('vehicle') ? 'vehicles' : r === 'assets' ? 'assets' : 'more';
+const tabOf = r => r === 'timeclock' ? 'timeclock' : (r === 'timesheet' || r === 'shifts') ? 'timesheet' : r.startsWith('vehicle') ? 'vehicles' : r.startsWith('asset') ? 'assets' : 'more';
 const FORMS = ['vehicleForm', 'assetForm', 'assetCheckout', 'correction', 'journeyForm', 'incident', 'jsaForm'];
 const NO_TABS = ['login', 'otp', 'unlock', 'oscar', ...FORMS];
-const NO_FAB = [...NO_TABS, 'vehicle', 'profile'];
+const NO_FAB = [...NO_TABS, 'vehicle', 'asset', 'profile'];
 
 const PANEL = [
   ['Sign in', [['login', 'Log in'], ['otp', 'Enter the code'], ['unlock', 'PIN unlock']]],
-  ['Tabs', [['timeclock', 'Timeclock'], ['timesheet', 'Timesheet'], ['shifts', 'Shifts'], ['vehicles', 'Vehicles'], ['vehicle', 'Vehicle detail'], ['assets', 'Assets']]],
+  ['Tabs', [['timeclock', 'Timeclock'], ['timesheet', 'Timesheet'], ['shifts', 'Shifts'], ['vehicles', 'Vehicles'], ['vehicle', 'Vehicle detail'], ['assets', 'Assets'], ['asset', 'Asset detail']]],
   ['More', [['journeys', 'Journeys'], ['jsa', 'JSA'], ['oscar', 'Oscar'], ['profile', 'Profile'], ['settings', 'Settings']]],
   ['Forms', [['vehicleForm', 'Add / edit vehicle'], ['assetForm', 'Add / edit asset'], ['assetCheckout', 'Asset check out / in'], ['correction', 'Request correction'], ['journeyForm', 'New journey plan'], ['incident', 'Report an incident'], ['jsaForm', 'JSA form']]],
 ];
@@ -112,7 +112,8 @@ const ACT = {
   // ---- forms ----
   form(v) { const [r, mode] = v.split(':'); S.edit = mode === 'edit'; go(r); },
   mode(v) { S.edit = v === 'edit'; render(); },
-  asset(v) { S.asset = v; S.edit = true; go('assetForm'); },
+  asset(v) { S.asset = v; S.atab = 'Details'; go('asset'); },
+  atab(v) { S.atab = v; render(true); },
   jsa(v) { S.jsa = +v; go('jsaForm'); },
   journey() { S.jstep = 0; go('journeyForm'); },
   jnext() { if (valid()) { S.jstep++; render(); } },

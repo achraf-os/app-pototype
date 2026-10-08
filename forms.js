@@ -44,7 +44,6 @@ DOCKS.vehicleForm = () => dockBtn(S.edit ? 'Save changes' : 'Add Vehicle', { don
 V.assetForm = () => {
   const a = S.edit ? ASSETS.find(x => x.id === S.asset) : {};
   return `${hdrBack(S.edit ? 'Edit Asset' : 'Add Asset')}<div class="stack">
-${S.edit ? `<div class="card p row gap12">${a.photo ? `<img src="${a.photo}" alt="" style="width:56px;height:56px;border-radius:10px;object-fit:cover">` : `<span class="chip slate" style="width:56px;height:56px">${ic('wrench', 26)}</span>`}<div class="grow"><b class="t-card">${a.name}</b><p class="t-sub">${a.st === 'in_use' ? 'Deployed to ' + a.loc : a.loc}</p></div><button class="btn sm" style="width:auto;padding:0 14px" data-go="assetCheckout">${a.st === 'in_use' ? 'Check In' : 'Check Out'}</button></div>` : ''}
 ${F.sec('Details')}
 ${F.two(F.text('Asset ID', a.id, 'e.g. DSC-00379'), F.text('Serial Number', S.edit ? 'SN-1029384' : '', 'e.g. SN-1029384', { btn: ['scan', 'Scan serial barcode'] }))}
 ${F.text('Asset Name', a.name, 'e.g. Cordless Drill', { req: 1, msg: 'Asset name is required' })}

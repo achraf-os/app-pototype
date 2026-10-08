@@ -42,13 +42,13 @@ const CARS = [
 const CAR_ST = { ok: ['ok', 'check', 'Analysed'], warn: ['warn', 'clock', 'Analysing'], off: ['neutral', 'video', 'Waiting for video'] };
 
 const ASSETS = [
-  { id: 'DRL-0142', name: 'Cordless drill', photo: 'img/a-drill.jpg', st: 'available', loc: 'Site Store A', tag: 'valid' },
-  { id: 'PPE-0037', name: 'Safety helmet', photo: 'img/a-helmet.jpg', st: 'in_use', loc: 'Alex Morgan', tag: 'valid' },
-  { id: 'LVL-0066', name: 'Laser level', photo: 'img/a-laser.jpg', st: 'available', loc: 'Site Store B', tag: 'due_soon' },
-  { id: 'GEN-0009', name: 'Generator 5kVA', photo: '', st: 'maintenance', loc: 'Workshop', tag: 'expired' },
+  { id: 'DRL-0142', name: 'Cordless drill', photo: 'img/a-drill.jpg', st: 'available', loc: 'Site Store A', tag: 'valid', maker: 'DeWalt', cat: 'Power tools', serial: 'SN-1029384', supplier: 'Total Tools', due: '4 Nov 2026', hist: [['Jordan Davis', '28 Sep 2026', '2 Oct 2026'], ['Alex Morgan', '14 Sep 2026', '18 Sep 2026']] },
+  { id: 'PPE-0037', name: 'Safety helmet', photo: 'img/a-helmet.jpg', st: 'in_use', loc: 'Alex Morgan', tag: 'valid', maker: 'Petzl', cat: 'PPE', serial: 'SN-5582017', supplier: 'RSEA Safety', due: '12 Jan 2027', hist: [['Alex Morgan', '5 Oct 2026', '']] },
+  { id: 'LVL-0066', name: 'Laser level', photo: 'img/a-laser.jpg', st: 'available', loc: 'Site Store B', tag: 'due_soon', maker: 'DeWalt', cat: 'Survey equipment', serial: 'SN-7740921', supplier: 'Total Tools', due: '20 Oct 2026', hist: [['Chris Taylor', '21 Sep 2026', '25 Sep 2026']] },
+  { id: 'GEN-0009', name: 'Generator 5kVA', photo: '', st: 'maintenance', loc: 'Workshop', tag: 'expired', maker: 'Honda', cat: 'Plant', serial: 'SN-0091273', supplier: 'Kennards', due: '1 Sep 2026', hist: [] },
 ];
 const ASSET_ST = { available: ['ok', 'Available'], in_use: ['info', 'In use'], maintenance: ['warn', 'Maintenance'], retired: ['neutral', 'Retired'], lost: ['bad', 'Lost'] };
-const TAG_ST = { valid: ['ok', 'Test & Tag valid'], due_soon: ['warn', 'Test due soon'], expired: ['bad', 'Test expired'] };
+const TAG_ST = { valid: ['ok', 'Test & Tag valid', 'Valid'], due_soon: ['warn', 'Test due soon', 'Due soon'], expired: ['bad', 'Test expired', 'Expired'] };
 
 const JOURNEYS = [
   { id: 1, to: 'Riverside Footbridge', from: 'Home · Brunswick', when: 'Today, 6:15 am', car: 'Site ute 04', st: 'in_progress' },
@@ -80,7 +80,7 @@ const MORE = [
 const S = {
   route: 'timeclock', state: 'data', role: 'worker',
   clock: 'ready', since: 0, job: 1,
-  edit: false, asset: 'DRL-0142', jsa: 1, jstep: 0,
+  edit: false, asset: 'DRL-0142', atab: 'Details', jsa: 1, jstep: 0,
   tsMode: 'Week', day: 'Thu', vf: 'mine', car: 'v04', vtab: 'Details', aseg: 'Assets', pin: 0, q: '',
   tog: { bio: true },
   chat: [['bot', 'Hi Alex — I can look up your jobs, shifts, assets and timesheets. What do you need?']],
