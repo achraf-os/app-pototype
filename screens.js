@@ -77,7 +77,7 @@ ${on ? `<button class="btn ${S.clock === 'break' ? 'warn' : 'soft'}" data-act="b
 </div>
 <div class="section"><h2 class="t-h2">Today</h2><button data-toast="Pending requests">View requests</button></div>
 <div class="card metrics"><div><b>${S.clock === 'ready' ? '0:00' : '7:34'}</b><small>Worked</small></div><div><b>${S.clock === 'ready' ? '0:00' : '0:32'}</b><small>Break</small></div><div><b>0:00</b><small>Overtime</small></div></div>
-${S.clock === 'ready' ? '<p class="t-sub center" style="padding:8px">No entries yet today — clock in to start</p>' : TODAY_ENTRIES.map(e => `<button class="day" data-toast="Entry detail"><div class="grow"><b>${e.in} – ${e.out}</b><small>${e.job}</small></div><b>${e.hrs}</b>${pill(e.status === 'approved' ? 'ok' : 'warn', e.status === 'approved' ? 'Approved' : 'Pending')}</button>`).join('')}
+${S.clock === 'ready' ? '<p class="t-sub center" style="padding:8px">No entries yet today — clock in to start</p>' : TODAY_ENTRIES.map(e => `<button class="day" data-go="correction"><div class="grow"><b>${e.in} – ${e.out}</b><small>${e.job}</small></div><b>${e.hrs}</b>${pill(e.status === 'approved' ? 'ok' : 'warn', e.status === 'approved' ? 'Approved' : 'Pending')}</button>`).join('')}
 </div>`)}`;
 };
 
@@ -110,7 +110,7 @@ ${guard({ error: "Couldn't load timesheets — tap to retry", icon: 'doc', empty
 <div class="bar mt12"><i style="width:${ok / 40 * 100}%;background:var(--ok-solid)"></i><i style="width:${pend / 40 * 100}%;background:var(--warn-solid)"></i></div>
 <div class="meta mt12"><span><i style="width:9px;height:9px;border-radius:50%;background:var(--ok-solid)"></i>Approved <b>${ok.toFixed(1)}</b></span><span><i style="width:9px;height:9px;border-radius:50%;background:var(--warn-solid)"></i>Pending <b>${pend.toFixed(1)}</b></span></div></div>
 <div class="section"><h2 class="t-h2">Daily entries</h2><div class="seg" style="width:128px;height:32px">${['Day', 'Week'].map(m => `<button style="line-height:26px;font-size:13px" class="${S.tsMode === m ? 'on' : ''}" data-act="tsMode" data-v="${m}">${m}</button>`).join('')}</div></div>
-${(S.tsMode === 'Day' ? WEEK.filter(d => d.d === 'Thu') : WEEK).map(d => `<button class="day" data-toast="${d.st === 'none' ? 'No time recorded for this day' : 'Entry detail · ' + d.d + ' ' + d.n}"><div class="d"><b>${d.d}</b><small>${d.n}</small></div><i></i><div class="grow"><b>${d.hrs ? d.hrs.toFixed(1) + ' hrs' : '– hrs'}</b><small>${d.in ? 'In ' + d.in + (d.out ? ' · Out ' + d.out : '') : 'No time recorded'}</small></div>${pill(P[d.st][0], P[d.st][1])}</button>`).join('')}
+${(S.tsMode === 'Day' ? WEEK.filter(d => d.d === 'Thu') : WEEK).map(d => `<button class="day" ${d.st === 'none' ? 'data-toast="No time recorded for this day"' : 'data-go="correction"'}><div class="d"><b>${d.d}</b><small>${d.n}</small></div><i></i><div class="grow"><b>${d.hrs ? d.hrs.toFixed(1) + ' hrs' : '– hrs'}</b><small>${d.in ? 'In ' + d.in + (d.out ? ' · Out ' + d.out : '') : 'No time recorded'}</small></div>${pill(P[d.st][0], P[d.st][1])}</button>`).join('')}
 </div>`)}`;
 };
 
@@ -131,7 +131,7 @@ ${list.length ? list.map(s => `<button class="card p" data-toast="${s.name}"><di
 /* ---------------- vehicles ---------------- */
 V.vehicles = () => {
   const shown = CARS.filter(c => S.vf === 'fleet' || c.mine);
-  return `${hdrMain()}${title('Vehicles', 'Check a vehicle in or out', `<button class="icon-btn sq" data-toast="Add Vehicle" aria-label="Add Vehicle">${ic('plus', 24)}</button>`)}
+  return `${hdrMain()}${title('Vehicles', 'Check a vehicle in or out', `<button class="icon-btn sq" data-act="form" data-v="vehicleForm:add" aria-label="Add Vehicle">${ic('plus', 24)}</button>`)}
 <div class="pad mt12"><div class="search"><label>${ic('search', 20, 1.9)}<input id="q" placeholder="Enter the full number plate" value="${S.q}"></label><button class="icon-btn box" data-toast="Scan number plate" aria-label="Scan number plate">${ic('scan', 22, 1.9)}</button></div></div>
 <div class="pad mt12"><div class="fchips">${[['mine', 'Your vehicles', CARS.filter(c => c.mine).length], ['fleet', 'Fleet', CARS.length]].map(f => `<button class="${S.vf === f[0] ? 'on' : ''}" data-act="vf" data-v="${f[0]}">${f[1]}<em>${f[2]}</em></button>`).join('')}</div></div>
 ${guard({ error: "Couldn't load vehicles — tap to retry", icon: 'car', empty: 'No vehicles assigned to you', emptySub: 'Search by number plate or scan a plate to find one', tall: 230 }, () => `
@@ -146,8 +146,8 @@ V.vehicle = () => {
   const body = S.vtab === 'Details' ? `<div class="card p" style="padding-top:2px;padding-bottom:2px">${[['Vehicle Name', c.name], ['ID', c.ext], ['Number Plate', c.plate], ['VIN', c.vin], ['Assigned to', c.driver]].map(r => `<div class="kv">${r[0]}<b>${r[1]}</b></div>`).join('')}</div>
 <div class="row gap12"><button class="btn" data-toast="Record a walk-around video">${ic('video', 20)}Check-in</button><button class="btn soft" data-toast="Record a walk-around video">${ic('video', 20)}Check-out</button></div>`
     : S.vtab === 'Inspections' ? [['Check-in', 'Today, 6:40 am', 'ok', 'Analysed'], ['Check-out', 'Yesterday, 3:12 pm', 'ok', 'Analysed'], ['Comparison', 'Yesterday, 3:20 pm', 'warn', 'Comparing…']].map(r => `<button class="card clip" data-toast="${r[0]}"><span class="lrow"><span class="chip blue">${ic(r[0] === 'Comparison' ? 'swap' : 'video', 22)}</span><span class="grow"><b class="t-body">${r[0]}</b><span class="t-sub" style="display:block">${r[1]}</span></span>${pill(r[2], r[3])}${cv()}</span></button>`).join('')
-    : `<button class="btn danger" data-toast="Report an incident">${ic('alert', 20)}Report an incident</button><div class="card p center"><p class="t-sub" style="padding:14px 0">No incident reports for this vehicle</p></div>`;
-  return `${hdrBack('Vehicle', `<button class="icon-btn" data-toast="Edit Vehicle" aria-label="Edit Vehicle">${ic('edit', 22)}</button>`)}
+    : `<button class="btn danger" data-go="incident">${ic('alert', 20)}Report an incident</button><div class="card p center"><p class="t-sub" style="padding:14px 0">No incident reports for this vehicle</p></div>`;
+  return `${hdrBack('Vehicle', `<button class="icon-btn" data-act="form" data-v="vehicleForm:edit" aria-label="Edit Vehicle">${ic('edit', 22)}</button>`)}
 <img src="${c.photo}" alt="${c.name}" style="width:100%;height:210px;object-fit:cover">
 <div class="pad" style="margin-top:14px"><div class="row between gap8"><h1 class="t-title trunc" style="font-size:25px">${c.name}</h1><span class="pill ${st[0]}">${ic(st[1], 14, 2.4)}${st[2]}</span></div>
 <div class="row gap12 mt8"><span class="plate"><i>VIC</i>${c.plate}</span><span class="t-sub">${c.make}</span></div></div>
@@ -158,20 +158,20 @@ V.vehicle = () => {
 /* ---------------- assets ---------------- */
 V.assets = () => {
   const locs = {}; ASSETS.forEach(a => { if (a.st !== 'in_use') locs[a.loc] = (locs[a.loc] || 0) + 1; });
-  return `${hdrMain()}${title('Assets', '', `<button class="icon-btn sq" data-toast="Add Asset" aria-label="Add Asset">${ic('plus', 24)}</button>`)}
+  return `${hdrMain()}${title('Assets', '', `<button class="icon-btn sq" data-act="form" data-v="assetForm:add" aria-label="Add Asset">${ic('plus', 24)}</button>`)}
 <div class="pad mt12"><div class="search"><label>${ic('search', 20, 1.9)}<input id="q" placeholder="Search tools" value="${S.q}"></label><button class="icon-btn box" data-toast="Filter by employee" aria-label="Filter">${ic('sliders', 22, 1.9)}</button></div></div>
 <div class="pad mt12"><div class="seg">${['Assets', 'Locations'].map(s => `<button class="${S.aseg === s ? 'on' : ''}" data-act="aseg" data-v="${s}">${s}</button>`).join('')}</div></div>
 ${guard({ error: "Couldn't load assets — tap to retry", icon: 'box', empty: 'No assets yet', emptySub: 'Add the tools and equipment your company owns to start tracking them', cta: 'Add Asset', tall: 132 }, () => S.aseg === 'Locations'
     ? `<div class="stack">${Object.keys(locs).map(k => `<button class="card clip" data-toast="${k}"><span class="lrow"><span class="chip blue">${ic('pin', 22)}</span><span class="grow"><b class="t-body">${k}</b><span class="t-sub" style="display:block">${locs[k]} asset${locs[k] > 1 ? 's' : ''}</span></span>${cv()}</span></button>`).join('')}</div>`
     : `<div class="stack"><div class="row between t-sub"><span>All Assets (${ASSETS.length})</span><span>Available: ${ASSETS.filter(a => a.st === 'available').length} · Deployed: ${ASSETS.filter(a => a.st === 'in_use').length}</span></div>
-${ASSETS.map(a => `<button class="card raise hcard" data-toast="${a.name} · asset detail" data-s="${(a.name + ' ' + a.id + ' ' + a.loc).toLowerCase()}">${a.photo ? `<img src="${a.photo}" alt="${a.name}">` : `<span class="chip slate" style="width:116px;height:116px">${ic('wrench', 36, 1.6)}</span>`}
+${ASSETS.map(a => `<button class="card raise hcard" data-act="asset" data-v="${a.id}" data-s="${(a.name + ' ' + a.id + ' ' + a.loc).toLowerCase()}">${a.photo ? `<img src="${a.photo}" alt="${a.name}">` : `<span class="chip slate" style="width:116px;height:116px">${ic('wrench', 36, 1.6)}</span>`}
 <div><b class="t-card trunc" style="display:block">${a.name}</b><p class="t-sub mt4">ID ${a.id}</p><div class="row gap6 mt8" style="flex-wrap:wrap">${stPill(ASSET_ST, a.st)}${stPill(TAG_ST, a.tag)}</div><p class="t-sub row gap6 mt8">${ic(a.st === 'in_use' ? 'user' : 'pin', 15)}${a.loc}</p></div></button>`).join('')}</div>`)}`;
 };
 
 /* ---------------- journeys ---------------- */
 V.journeys = () => `${hdrMain()}${title('My journeys', 'Your journey plans, current and past')}
 ${guard({ error: "Couldn't load your journeys", icon: 'route', empty: 'No journeys yet', emptySub: 'Journey plans assigned to you, and ones you raise, appear here', cta: 'New journey plan' }, () => `
-<div class="stack"><button class="btn" data-toast="New journey plan · step 1 of 5">${ic('plus', 20)}New journey plan</button>
+<div class="stack"><button class="btn" data-act="journey">${ic('plus', 20)}New journey plan</button>
 ${JOURNEYS.map(j => `<button class="card p" data-toast="Journey plan · ${j.to}"><div class="row between gap8"><b class="t-card trunc">${j.to}</b>${stPill(JOURNEY_ST, j.st)}</div><p class="t-sub mt4">From ${j.from}</p>
 <div class="meta mt8"><span>${ic('clock', 16)}${j.when}</span><span>${ic('car', 16)}${j.car}</span></div>
 ${j.st === 'in_progress' ? `<span class="btn sm mt12">${ic('play', 16)}Open trip</span>` : ''}</button>`).join('')}</div>`)}`;
@@ -179,7 +179,7 @@ ${j.st === 'in_progress' ? `<span class="btn sm mt12">${ic('play', 16)}Open trip
 /* ---------------- JSA ---------------- */
 V.jsa = () => `${hdrMain()}${title("Today's JSA", 'Job safety analysis for your jobs today')}
 ${guard({ error: "Couldn't load today's JSA", icon: 'shield', empty: 'No JSA for today', emptySub: "When your supervisor sends today's JSA for a job you're on, it appears here" }, () => `
-<div class="stack">${JSAS.map(j => `<button class="card p" data-toast="JSA · ${j.title}"><div class="row gap12"><span class="chip teal">${ic('shield', 22)}</span><div class="grow"><b class="t-card trunc" style="display:block">${j.title}</b><span class="t-sub">${j.job}</span></div>${cv()}</div>
+<div class="stack">${JSAS.map(j => `<button class="card p" data-act="jsa" data-v="${j.id}"><div class="row gap12"><span class="chip teal">${ic('shield', 22)}</span><div class="grow"><b class="t-card trunc" style="display:block">${j.title}</b><span class="t-sub">${j.job}</span></div>${cv()}</div>
 <div class="row between mt12">${stPill(JSA_ST, j.st)}<span class="t-sub">${j.q} questions</span></div>
 <div class="bar mt12"><i style="width:${j.st === 'sent' ? 0 : 100}%;${j.st === 'approved' ? 'background:var(--ok-solid)' : ''}"></i></div>
 <p class="t-sub mt8">${j.by ? `Submitted by ${j.by} · ` : ''}Approver: ${j.approver}</p></button>`).join('')}</div>`)}`;

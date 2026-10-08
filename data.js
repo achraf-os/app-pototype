@@ -80,6 +80,7 @@ const MORE = [
 const S = {
   route: 'timeclock', state: 'data', role: 'worker',
   clock: 'ready', since: 0, job: 1,
+  edit: false, asset: 'DRL-0142', jsa: 1, jstep: 0,
   tsMode: 'Week', day: 'Thu', vf: 'mine', car: 'v04', vtab: 'Details', aseg: 'Assets', pin: 0, q: '',
   tog: { bio: true },
   chat: [['bot', 'Hi Alex — I can look up your jobs, shifts, assets and timesheets. What do you need?']],

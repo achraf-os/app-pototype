@@ -6,13 +6,15 @@ const $ = s => document.querySelector(s);
 // [route, label, icon]; "more" opens the sheet instead of a screen.
 const TABS = [['timeclock', 'Clock', 'clock'], ['timesheet', 'Timesheet', 'calendar'], ['vehicles', 'Vehicles', 'car'], ['assets', 'Assets', 'box'], ['more', 'More', 'dots']];
 const tabOf = r => r === 'timeclock' ? 'timeclock' : (r === 'timesheet' || r === 'shifts') ? 'timesheet' : r.startsWith('vehicle') ? 'vehicles' : r === 'assets' ? 'assets' : 'more';
-const NO_TABS = ['login', 'otp', 'unlock', 'oscar'];
+const FORMS = ['vehicleForm', 'assetForm', 'assetCheckout', 'correction', 'journeyForm', 'incident', 'jsaForm'];
+const NO_TABS = ['login', 'otp', 'unlock', 'oscar', ...FORMS];
 const NO_FAB = [...NO_TABS, 'vehicle', 'profile'];
 
 const PANEL = [
   ['Sign in', [['login', 'Log in'], ['otp', 'Enter the code'], ['unlock', 'PIN unlock']]],
   ['Tabs', [['timeclock', 'Timeclock'], ['timesheet', 'Timesheet'], ['shifts', 'Shifts'], ['vehicles', 'Vehicles'], ['vehicle', 'Vehicle detail'], ['assets', 'Assets']]],
   ['More', [['journeys', 'Journeys'], ['jsa', 'JSA'], ['oscar', 'Oscar'], ['profile', 'Profile'], ['settings', 'Settings']]],
+  ['Forms', [['vehicleForm', 'Add / edit vehicle'], ['assetForm', 'Add / edit asset'], ['assetCheckout', 'Asset check out / in'], ['correction', 'Request correction'], ['journeyForm', 'New journey plan'], ['incident', 'Report an incident'], ['jsaForm', 'JSA form']]],
 ];
 
 function render(keepScroll) {
@@ -20,12 +22,13 @@ function render(keepScroll) {
   const offline = S.state === 'offline' ? `<div class="banner">${ic('wifiOff', 18)}No connection — showing saved data</div>` : '';
   view.innerHTML = offline + V[S.route]();
   view.style.display = S.route === 'oscar' ? 'block' : '';
-  $('#dock').innerHTML = S.route === 'oscar' ? oscarDock() : '';
+  $('#dock').innerHTML = S.route === 'oscar' ? oscarDock() : DOCKS[S.route] ? DOCKS[S.route]() : '';
   const tb = $('#tabbar'), on = tabOf(S.route);
   tb.style.display = NO_TABS.includes(S.route) ? 'none' : '';
   tb.innerHTML = TABS.map(t => `<button class="tab${t[0] === on ? ' on' : ''}" ${t[0] === 'more' ? 'data-act="more"' : `data-go="${t[0]}"`}>${ic(t[2], 25, 1.9)}<span>${t[1]}</span></button>`).join('');
   const fab = $('#fab'); fab.style.display = NO_FAB.includes(S.route) ? 'none' : ''; fab.innerHTML = ic('spark', 26, 1.9);
   $('#panel').innerHTML = PANEL.map(g => `<h4>${g[0]}</h4>${g[1].map(s => `<button class="${S.route === s[0] ? 'on' : ''}" data-go="${s[0]}">${s[1]}</button>`).join('')}`).join('')
+    + `<h4>Form mode</h4><div class="two">${[['add', false], ['edit', true]].map(m => `<button class="${S.edit === m[1] ? 'on' : ''}" data-act="mode" data-v="${m[0]}">${m[0]}</button>`).join('')}</div>`
     + `<h4>Screen state</h4><div class="two">${['data', 'loading', 'empty', 'error', 'offline'].map(s => `<button class="${S.state === s ? 'on' : ''}" data-act="state" data-v="${s}">${s}</button>`).join('')}</div>`
     + `<h4>Timeclock phase</h4><div class="two">${['ready', 'active', 'break', 'complete'].map(s => `<button class="${S.clock === s ? 'on' : ''}" data-act="phase" data-v="${s}">${s}</button>`).join('')}</div>`
     + `<h4>Signed in as</h4><div class="two">${['worker', 'owner'].map(s => `<button class="${S.role === s ? 'on' : ''}" data-act="role" data-v="${s}">${s}</button>`).join('')}</div>`;
@@ -47,6 +50,14 @@ function go(r, replace) {
 function toast(msg) {
   const el = $('#toast'); el.textContent = msg; el.classList.add('show');
   clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+/* Marks empty required fields with their inline message; true when the form can be submitted. */
+function valid() {
+  let first = null;
+  document.querySelectorAll('#view [data-req]').forEach(i => { const bad = !i.value.trim(); i.closest('.field').classList.toggle('err', bad); if (bad && !first) first = i; });
+  if (first) { first.closest('.field').scrollIntoView({ block: 'center', behavior: 'smooth' }); toast('Check the highlighted fields'); }
+  return !first;
 }
 
 function filter() {
@@ -98,6 +109,19 @@ const ACT = {
   tog(v) { S.tog[v] = !S.tog[v]; render(true); },
   pin() { S.pin++; if (S.pin >= 4) { S.pin = 0; go('timeclock'); } else render(true); },
   pinDel() { S.pin = Math.max(0, S.pin - 1); render(true); },
+  // ---- forms ----
+  form(v) { const [r, mode] = v.split(':'); S.edit = mode === 'edit'; go(r); },
+  mode(v) { S.edit = v === 'edit'; render(); },
+  asset(v) { S.asset = v; S.edit = true; go('assetForm'); },
+  jsa(v) { S.jsa = +v; go('jsaForm'); },
+  journey() { S.jstep = 0; go('journeyForm'); },
+  jnext() { if (valid()) { S.jstep++; render(); } },
+  jprev() { S.jstep--; render(); },
+  // Chips and toggles change in place, so typed values in the form are not lost to a re-render.
+  opt(v, el) { el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); },
+  optMulti(v, el) { el.classList.toggle('on'); },
+  ftog(v, el) { const on = el.classList.toggle('on'); if (v) $('#' + v).style.display = on ? '' : 'none'; },
+  save(v) { if (!valid()) return; history.back(); setTimeout(() => toast(v), 60); },
   ask() {
     const q = $('#ask').value.trim(); if (!q) return;
     S.chat.push(['me', q], ['bot', 'You are rostered on Riverside Footbridge today, 7:00 am – 3:00 pm, with a 30 minute break.']);
@@ -107,11 +131,14 @@ const ACT = {
 
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-act],[data-go],[data-toast]'); if (!t) return;
-  if (t.dataset.act) ACT[t.dataset.act](t.dataset.v);
+  if (t.dataset.act) ACT[t.dataset.act](t.dataset.v, t);
   else if (t.dataset.go) go(t.dataset.go);
   else toast(t.dataset.toast);
 });
-document.addEventListener('input', e => { if (e.target.id === 'q') { S.q = e.target.value; filter(); } });
+document.addEventListener('input', e => {
+  if (e.target.id === 'q') { S.q = e.target.value; filter(); }
+  const f = e.target.closest('.field.err'); if (f && e.target.value.trim()) f.classList.remove('err');
+});
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'ask') ACT.ask(); });
 window.addEventListener('popstate', () => { S.route = V[location.hash.slice(2)] ? location.hash.slice(2) : 'timeclock'; sheet(false); render(); });
 
