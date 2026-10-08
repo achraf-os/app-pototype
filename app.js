@@ -138,7 +138,7 @@ const ACT = {
   },
 };
 
-Object.assign(ACT, REQ_ACT);
+Object.assign(ACT, REQ_ACT, TEAM_ACT);
 
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-act],[data-go],[data-toast]'); if (!t) return;
